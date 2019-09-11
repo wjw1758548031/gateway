@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -23,24 +24,22 @@ func (Colony) Gomain(writer http.ResponseWriter, request *http.Request) {
 		fmt.Println("parameter error ")
 		return
 	}
-	if input.Addrs == ""{
+	if input.Addrs == "" {
 		fmt.Println("The address is empty")
 		return
 	}
-	for _,v := range strings.Split(input.Addrs,","){
+	for _, v := range strings.Split(input.Addrs, ",") {
 		//p ,_ :=strconv.Atoi(v)
-		go http2.StartServer(v,strconv.Itoa(*P))
+		go http2.StartServer(v, strconv.Itoa(*P))
 		//go Run(&p)
 	}
-	Ps = fmt.Sprintf("%v,%v",input.Addrs,Ps)
+	Ps = fmt.Sprintf("%v,%v", input.Addrs, Ps)
 }
-
 
 //查看服务内的地址
 func (Client) Get(writer http.ResponseWriter, request *http.Request) {
 	utils.WriterJson(writer, map[string]interface{}{"err": nil, "code": 200, "data": client.Addrs})
 }
-
 
 //发送对应的接口里在进行接受 //参数格式  id=1&name=zz 也可以直接序列化
 func (Client) Send(writer http.ResponseWriter, request *http.Request) {
@@ -65,7 +64,7 @@ func (Client) Send(writer http.ResponseWriter, request *http.Request) {
 	//每次进行加1 这样就会不停的轮询
 	count++
 
-	if len(client.Addrs[input.Server]) == 0{
+	if len(client.Addrs[input.Server]) == 0 {
 		utils.WriterJson(writer, map[string]interface{}{"err": "The service is not registered", "code": 500, "data": nil})
 		return
 	}
@@ -111,14 +110,14 @@ func (Client) Send(writer http.ResponseWriter, request *http.Request) {
 //删除注册地址
 func (Client) Delete(writer http.ResponseWriter, request *http.Request) {
 	input := &struct {
-		Addr   string `form:"addr" query:"addr"`
+		Addr string `form:"addr" query:"addr"`
 	}{}
 	err := utils.Binding(request, input)
 	if err != nil {
 		utils.WriterJson(writer, map[string]interface{}{"err": "parameter error ", "code": 400, "data": nil})
 		return
 	}
-	if input.Addr == ""  {
+	if input.Addr == "" {
 		utils.WriterJson(writer, map[string]interface{}{"err": "addr or server Can't be empty.", "code": 500, "data": nil})
 		return
 	}
@@ -135,35 +134,40 @@ func (Client) Delete(writer http.ResponseWriter, request *http.Request) {
 
 //Addr注册地址
 func (Client) Register(writer http.ResponseWriter, request *http.Request) {
-	input := &struct {
+	/*input := &struct {
 		Addr   string `form:"addr" query:"addr"`
-	}{}
-	err := utils.Binding(request, input)
+	}{}*/
+	//err := utils.Binding(request, input)
+	ctx := getContext(writer, request)
+	//url解码方式
+	u, err := url.ParseQuery(ctx.Body)
 	if err != nil {
 		utils.WriterJson(writer, map[string]interface{}{"err": "parameter error ", "code": 400, "data": nil})
 		return
 	}
-	if input.Addr == ""  {
+	Addr := u.Get("addr")
+	if Addr == "" {
 		utils.WriterJson(writer, map[string]interface{}{"err": "addr or server Can't be empty.", "code": 500, "data": nil})
 		return
 	}
 	//判断下请求前是否加了http//
-	if isOk, _ := regexp.MatchString("http://*", input.Addr); !isOk {
-		utils.WriterJson(writer, map[string]interface{}{"err": "The address format error is, for example: http://:5000", "code": 500, "data": nil})
+	if isOk, _ := regexp.MatchString("http://*", Addr); !isOk {
+		utils.WriterJson(writer, map[string]interface{}{"err": "The address format error is, for example: http://5000", "code": 500, "data": nil})
 		return
 	}
 
 	//是否ping通了
 	var conn net.Conn
 	//请求必须为：http://127.0.0.1:9090   会截取后面的
-	if conn, err = net.DialTimeout("tcp", strings.Split(input.Addr, "//")[1], 3*time.Second); err != nil {
+	if conn, err = net.DialTimeout("tcp", strings.Split(Addr, "//")[1], 3*time.Second); err != nil {
 		fmt.Println(err)
-		utils.WriterJson(writer, map[string]interface{}{"err": input.Addr + ":No access ", "code": 500, "data": nil})
+		utils.WriterJson(writer, map[string]interface{}{"err": Addr + ":No access ", "code": 500, "data": nil})
 		return
 	}
 	conn.Close()
-	client.Addrs[input.Addr] = input.Addr
+	client.Addrs[Addr] = Addr
 	//把最多地址个数给到轮询位置 也相当于初始化了
 	count = len(client.Addrs)
+	fmt.Println(fmt.Sprintf("%v", client.Addrs))
 	utils.WriterJson(writer, map[string]interface{}{"data": "success", "code": 200, "err": nil})
 }

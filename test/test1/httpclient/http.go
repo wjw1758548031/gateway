@@ -76,7 +76,7 @@ func (this *Http) GetHeader(url string, headers map[string]string) (string, erro
 		return string(data), nil
 	}
 }
-func (this *Http) Post(urlStr string, post string, proxy bool,token map[string]string) (string, error) {
+func (this *Http) Post(urlStr string, post string, proxy bool, head map[string]string) (string, error) {
 	tr := http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -96,10 +96,10 @@ func (this *Http) Post(urlStr string, post string, proxy bool,token map[string]s
 	}
 	resp, err := c.Post(urlStr, "application/x-www-form-urlencoded", strings.NewReader(post))
 	resp.Header = http.Header{}
-	for k , v :=range token{
-		resp.Header.Add(k,v)
+	for k, v := range head {
+		resp.Header.Add(k, v)
 	}
-	if  err != nil {
+	if err != nil {
 		//log.Error(err)
 		return "", err
 	} else {
@@ -109,7 +109,7 @@ func (this *Http) Post(urlStr string, post string, proxy bool,token map[string]s
 	}
 }
 
-func (this *Http) PostClient(urlStr string, post string, proxy bool,token map[string]string) (string, error) {
+func (this *Http) PostClient(urlStr string, post string, proxy bool, head map[string]string) (string, error) {
 	tr := http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -128,7 +128,7 @@ func (this *Http) PostClient(urlStr string, post string, proxy bool,token map[st
 		Timeout:   time.Second * time.Duration(this.Timeout),
 	}
 
-	req, err := http.NewRequest("POST",urlStr,  strings.NewReader(post))
+	req, err := http.NewRequest("POST", urlStr, strings.NewReader(post))
 	if err != nil {
 		return "", err
 		// handle error
@@ -137,11 +137,11 @@ func (this *Http) PostClient(urlStr string, post string, proxy bool,token map[st
 	//resp.Header = http.Header{}
 	//请求头
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	for k , v :=range token{
-		req.Header.Set(k,v)
+	for k, v := range head {
+		req.Header.Set(k, v)
 	}
 	resp, err := c.Do(req)
-	if  err != nil {
+	if err != nil {
 		//log.Error(err)
 		return "", err
 	} else {

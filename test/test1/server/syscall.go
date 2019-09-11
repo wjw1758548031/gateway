@@ -8,10 +8,11 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	http2 "test/test1/httpclient"
 	"time"
 )
 
-func Control(p int,load string) {
+func Control(p int, load string) {
 	sig := make(chan os.Signal)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL, syscall.SIGHUP, syscall.SIGQUIT)
 	fmt.Println("receive signal `%s`\n", <-sig)
@@ -19,30 +20,33 @@ func Control(p int,load string) {
 	needP := 0
 
 	//循环负载端口，拿出端口进行重新加载服务
-	for _,v:= range strings.Split(load,","){
-		pOne , err := strconv.Atoi(v)
-		if err != nil{
+	for _, v := range strings.Split(load, ",") {
+		pOne, err := strconv.Atoi(v)
+		if err != nil {
 			fmt.Println(err)
 			panic(nil)
 		}
-		if pOne != p{
+		if pOne != p {
 			//是否ping通了
 			//请求必须为：http://127.0.0.1:9090   会截取后面的
-			if _, err := net.DialTimeout("tcp", fmt.Sprintf(":%v",pOne), 3*time.Second); err == nil {
+			if _, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%v", pOne), 3*time.Second); err == nil {
 				needP = pOne
 			}
 		}
 	}
-	if needP == 0{
+
+	if needP == 0 {
 		fmt.Println("程序终止")
 		panic(nil)
 	}
+
 	//访问对面的程序重启服务 访问接口
-	_, err := htpp.Post(fmt.Sprintf("http://:%v/http/client/gomain",needP),fmt.Sprintf("addrs=%v",Ps) , false,nil)
+	_, err := http2.HttpClient.PostClient(fmt.Sprintf("http://127.0.0.1:%v/http/client/gomain", needP), fmt.Sprintf("addrs=%v", Ps), false, map[string]string{"forward": "true"})
 	if err != nil {
-		fmt.Println("needp:",needP,err)
+		fmt.Println("needp:", needP, err)
 		panic(nil)
 	}
-	fmt.Println(fmt.Sprintf("http://:%v/http/client/gomain",needP))
+
+	fmt.Println(fmt.Sprintf("http://127.0.0.1:%v/http/client/gomain", needP))
 	panic(nil)
 }

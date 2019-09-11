@@ -21,11 +21,11 @@ func (this *handle) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	proxy.ServeHTTP(w, r)
 }
 
-func StartServer(port,localPort string) {
-	//被代理的服务器host和port 本地端口
-	h := &handle{host: "", port: localPort}
+func StartServer(port, localPort string) {
+	//被代理的服务器host和port 本地端口 必须要填写一个ip地址
+	h := &handle{host: "127.0.0.1", port: localPort}
 	//监控的端口
-	err := http.ListenAndServe(":"+port, h)
+	err := http.ListenAndServe("127.0.0.1:"+port, h)
 	if err != nil {
 		log.Fatalln("ListenAndServe: ", err)
 	}

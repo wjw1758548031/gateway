@@ -12,7 +12,7 @@ import (
 
 func main() {
 	s := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", "", 9090),
+		Addr:    fmt.Sprintf("%s:%d", "", 9000),
 		Handler: Router(chi.NewMux()),
 	}
 	s.ListenAndServe()
@@ -43,22 +43,22 @@ func Router(mux *chi.Mux) *chi.Mux {
 	return mux
 }
 
-func init(){
+func init() {
 	client = Client{}
 }
 
 var client Client
 
 type Client struct {
-	Addrs map[string][]string
-	HttpRule int64  // 1.是平均访问  2.是均衡访问 3.
+	Addrs    map[string][]string
+	HttpRule int64 // 1.是平均访问  2.是均衡访问 3.
 }
 
 //Addr注册地址
 func (Client) Register(writer http.ResponseWriter, request *http.Request) {
 	fmt.Println("1")
 	e := json.NewEncoder(writer)
-	err := e.Encode(map[string]interface{}{"swjw":"swjw"})
+	err := e.Encode(map[string]interface{}{"swjw": "swjw"})
 	if err != nil {
 		log.Error(err)
 	}
